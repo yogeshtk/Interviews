@@ -20,3 +20,6 @@
 - Strong: finds 4 or more, ties each to the spec, proposes a systemic prevention.
 - Adequate: finds 2 or 3.
 - Weak: approves it or comments only on style.
+
+## Using it in the 25-minute review
+The candidate isn't expected to find every flaw. If they find the three biggest (rows 2, 4 and 5 for data integrity, or 1, 6 and 7 for correctness and resilience) and explain why, that meets expectations. Finding four or more and proposing prevention is exceptional.

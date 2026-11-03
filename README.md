@@ -1,34 +1,37 @@
-# Senior Engineer Interview Pack: Regulatory Reporting Tech
+# Senior Engineer Interview: Regulatory Reporting Tech
 
-Stack: Java, MongoDB, Solace/JMS, S3, Docker/Kubernetes. Development uses Spec Kit (spec-driven AI development).
+One 90-minute structured interview. Stack: Java, MongoDB, Solace/JMS, S3, Docker/Kubernetes. Development uses Spec Kit (spec-driven AI development).
 
-Same exercises and rubric for every candidate. Score on evidence, not impressions.
+The question it answers: can this person take an ambiguous regulatory requirement, turn it into a reliable technical solution, use AI intelligently, and make sure it works in production?
 
 ## Layout
 
-| Folder | Who sees it |
+| Path | Who sees it |
 | --- | --- |
-| `candidate/` | Hand to the candidate (briefs and code only) |
-| `interviewer/` | Interviewers only (flow, notes, answer keys, rubric, questions) |
+| `candidate/` | Candidate: three short exercise briefs and the Java code |
+| `interviewer/00-interview-script-90min.md` | Interviewer script with timings and follow-ups |
+| `interviewer/01-scorecard.md` | One-page scorecard |
+| `interviewer/02-code-review-answer-key.md` | Answer key for the seeded flaws |
+| `interviewer/03-design-probes.md` | Six design probes |
+| `interviewer/supporting/` | Detailed notes and question bank, as backup |
 
-## Running order
+## Plan
 
-| Stage | Length | Interviewer | File |
-| --- | --- | --- | --- |
-| 1. Screen call | 30 min | Hiring manager | `interviewer/04-question-bank.md` |
-| 2. Spec-writing work sample | 60 min | Senior engineer | `candidate/work-sample-brief.md`, `interviewer/01-work-sample-notes.md` |
-| 3. Code review and platform design | 45 min | Peer engineer | `candidate/code-review/`, `candidate/design-exercise-brief.md`, `interviewer/02-...`, `interviewer/03-...` |
-| 4. Domain and stakeholder conversation | 45 min | Compliance, ops or reporting analyst | `interviewer/04-question-bank.md` |
-| 5. Behavioural and values | 30 min | Hiring manager or skip-level | `interviewer/04-question-bank.md` |
-
-Full detail: `interviewer/00-interview-flow.md`. Scoring: `interviewer/05-scorecard.md`.
+| Time | Section | Candidate brief |
+| --- | --- | --- |
+| 30 min | Requirements and spec | `candidate/exercise-1-spec.md` |
+| 25 min | Code review | `candidate/exercise-2-code-review/` |
+| 25 min | System design and experience | `candidate/exercise-3-design.md` |
+| 10 min | Candidate questions and close | |
 
 ## Before the interview
 
-- Share the format and the tools with the candidate in advance.
-- Print or open `interviewer/05-scorecard.md` for each interviewer.
-- Compile check for the Java exercise: `cd candidate/code-review && javac *.java && java TradeReportServiceTest`
+- Send the candidate the format in advance. Don't share `interviewer/`.
+- Check the Java exercise compiles: `cd candidate/exercise-2-code-review && javac -d /tmp/o *.java && java -cp /tmp/o TradeReportServiceTest`
+- Print `interviewer/01-scorecard.md`.
 
-## After
+## Priorities for this role
 
-Each interviewer scores independently and writes down evidence before discussion. Debrief within 24 hours.
+1. Specification thinking.
+2. Verification mindset: spotting when AI-generated code and tests are wrong.
+3. Production engineering: data integrity and meeting regulatory deadlines despite failures.
