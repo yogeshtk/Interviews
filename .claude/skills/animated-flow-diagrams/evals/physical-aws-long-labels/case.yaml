@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: physical-aws-long-labels
+expected_outcome: |
+  A physical deployment diagram with nested boundaries (region, VPC, cluster/subnet), long names shortened with tooltips and listed in the legend rather than overflowing, ports/protocols on links, and separate scenes for the request path and the email flow with the queue showing waiting messages.

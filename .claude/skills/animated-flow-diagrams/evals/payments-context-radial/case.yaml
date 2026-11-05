@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: payments-context-radial
+expected_outcome: |
+  A system context diagram with the platform in the middle and the six neighbours around it, no internal components, links labelled with business meaning, and a payment animated through screening, settlement and the downstream consumers in separate scenes without everything moving at once.

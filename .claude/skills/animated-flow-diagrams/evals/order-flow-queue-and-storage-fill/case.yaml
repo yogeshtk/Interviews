@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: order-flow-queue-and-storage-fill
+expected_outcome: |
+  A single offline HTML diagram with a data-flow story in 3-5 scenes. The database and the archive store visibly fill during write steps, and at least two messages wait in the topic before the first is consumed. Only one or two paths animate at a time, every step has a caption, no label overflows its component, and the reply lists the defaults that were chosen.

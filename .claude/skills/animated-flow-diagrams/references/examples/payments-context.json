@@ -1,0 +1,40 @@
+{
+  "title": "Payments platform — system context",
+  "type": "context",
+  "layout": {"mode": "radial"},
+  "nodes": [
+    {"id": "sys", "kind": "service", "label": "Payments Platform", "center": true, "w": 220, "h": 84, "description": "The system in scope: accepts payment instructions, screens them and settles them."},
+    {"id": "cust", "kind": "actor", "label": "Retail customer", "description": "Initiates payments from the mobile and web banking apps."},
+    {"id": "ops", "kind": "actor", "label": "Payment operations", "description": "Investigates stuck or rejected payments."},
+    {"id": "bank", "kind": "external", "label": "Correspondent bank", "description": "Receives outbound payments and returns confirmations."},
+    {"id": "sanc", "kind": "external", "label": "Sanctions screening vendor", "description": "Screens every payment against sanctions lists."},
+    {"id": "reg", "kind": "external", "label": "Regulatory reporting hub", "description": "Receives transaction reports required by regulators."},
+    {"id": "ledger", "kind": "external", "label": "General ledger", "description": "Receives accounting entries after settlement."}
+  ],
+  "edges": [
+    {"id": "c1", "from": "cust", "to": "sys", "label": "Payment instruction"},
+    {"id": "c2", "from": "sys", "to": "sanc", "label": "Screening request"},
+    {"id": "c3", "from": "sanc", "to": "sys", "label": "Screening result"},
+    {"id": "c4", "from": "sys", "to": "bank", "label": "Settlement message"},
+    {"id": "c5", "from": "bank", "to": "sys", "label": "Confirmation"},
+    {"id": "c6", "from": "sys", "to": "ledger", "label": "Accounting entries", "kind": "async"},
+    {"id": "c7", "from": "sys", "to": "reg", "label": "Transaction report", "kind": "async"},
+    {"id": "c8", "from": "sys", "to": "ops", "label": "Exceptions & alerts", "kind": "async"}
+  ],
+  "scenes": [
+    {"title": "A payment is requested", "steps": [
+      {"edge": "c1", "payload": "pay £250", "caption": "A customer instructs a payment through the banking app."},
+      {"edge": "c2", "payload": "screen", "caption": "Before anything moves, the platform asks the vendor to screen the parties."},
+      {"edge": "c3", "payload": "clear", "caption": "The vendor returns a clear result."}
+    ]},
+    {"title": "Settlement", "steps": [
+      {"edge": "c4", "payload": "MT103", "caption": "The platform sends the settlement message to the correspondent bank."},
+      {"edge": "c5", "payload": "ack", "caption": "The bank confirms receipt."}
+    ]},
+    {"title": "After the fact", "text": "Three downstream consumers are updated without holding up the customer.", "steps": [
+      {"edge": "c6", "payload": "journal", "caption": "Accounting entries go to the general ledger."},
+      {"edge": "c7", "payload": "report", "caption": "The regulatory report is filed.", "parallel": true, "delay": 0.4},
+      {"edge": "c8", "payload": "alert", "caption": "Anything unusual is raised to payment operations."}
+    ]}
+  ]
+}

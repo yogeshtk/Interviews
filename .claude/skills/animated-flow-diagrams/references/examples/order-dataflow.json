@@ -1,0 +1,61 @@
+{
+  "title": "Order processing — data flow",
+  "type": "dataflow",
+  "mode": "scenes",
+  "groups": [
+    {"id": "backend", "label": "Order platform"}
+  ],
+  "nodes": [
+    {"id": "cust", "kind": "actor", "label": "Customer", "description": "Places orders from the web or mobile app."},
+    {"id": "gw", "kind": "gateway", "label": "API Gateway", "tech": "Kong", "group": "backend", "description": "Terminates TLS, authenticates the caller and routes requests."},
+    {"id": "orders", "kind": "service", "label": "Order Service", "tech": "Java · Spring Boot", "group": "backend", "description": "Validates the order and stores it. Publishes an OrderCreated event."},
+    {"id": "db", "kind": "database", "label": "Orders DB", "tech": "PostgreSQL", "group": "backend", "fill": 0.18, "description": "System of record for orders."},
+    {"id": "q", "kind": "queue", "label": "order-events topic", "group": "backend", "description": "Kafka topic carrying OrderCreated events to downstream consumers."},
+    {"id": "ful", "kind": "service", "label": "Fulfilment Service", "tech": "Java · Kafka consumer", "group": "backend", "description": "Consumes OrderCreated events and reserves stock."},
+    {"id": "pay", "kind": "external", "label": "Payment Provider", "description": "Third-party card processor."},
+    {"id": "wh", "kind": "storage", "label": "Event Archive", "tech": "S3", "group": "backend", "fill": 0.05, "description": "Long-term archive of every event for audit and replay."}
+  ],
+  "edges": [
+    {"id": "e1", "from": "cust", "to": "gw", "label": "POST /orders", "protocol": "HTTPS"},
+    {"id": "e2", "from": "gw", "to": "orders", "label": "Forward request", "protocol": "HTTP"},
+    {"id": "e3", "from": "orders", "to": "db", "label": "INSERT order", "protocol": "JDBC"},
+    {"id": "e4", "from": "orders", "to": "pay", "label": "Charge card", "protocol": "HTTPS"},
+    {"id": "e5", "from": "orders", "to": "q", "label": "Publish OrderCreated", "kind": "async", "protocol": "Kafka"},
+    {"id": "e6", "from": "q", "to": "ful", "label": "Consume event", "kind": "async", "protocol": "Kafka"},
+    {"id": "e7", "from": "q", "to": "wh", "label": "Archive every event to long-term storage for audit and replay", "kind": "async", "protocol": "Kafka Connect"}
+  ],
+  "scenes": [
+    {
+      "title": "Customer places an order",
+      "text": "The request enters through the gateway and reaches the Order Service.",
+      "steps": [
+        {"edge": "e1", "payload": "order #1042", "caption": "The customer submits an order over HTTPS."},
+        {"edge": "e2", "payload": "order #1042", "caption": "The gateway authenticates the caller and forwards the request."}
+      ]
+    },
+    {
+      "title": "Order is saved and paid",
+      "text": "The Order Service writes the order and charges the card.",
+      "steps": [
+        {"edge": "e3", "payload": "order #1042", "fillBy": 0.12, "caption": "The order is written to the database, which grows by one row."},
+        {"edge": "e4", "payload": "charge", "caption": "In parallel, the service asks the payment provider to charge the card.", "parallel": true}
+      ]
+    },
+    {
+      "title": "Event goes onto the topic",
+      "text": "OrderCreated events are queued so consumers can work at their own pace.",
+      "steps": [
+        {"edge": "e5", "msg": "#1042", "payload": "OrderCreated", "caption": "The service publishes OrderCreated; it waits in the topic until a consumer is ready."},
+        {"edge": "e5", "msg": "#1043", "payload": "OrderCreated", "caption": "A second order arrives and queues behind the first."}
+      ]
+    },
+    {
+      "title": "Consumers drain the topic",
+      "text": "Fulfilment reads the oldest message first; the archive copies events for audit.",
+      "steps": [
+        {"edge": "e6", "payload": "OrderCreated", "caption": "Fulfilment takes the oldest event off the topic and reserves stock."},
+        {"edge": "e7", "payload": "OrderCreated", "fillBy": 0.22, "caption": "The archive copies the next event, so the archive store fills up over time."}
+      ]
+    }
+  ]
+}

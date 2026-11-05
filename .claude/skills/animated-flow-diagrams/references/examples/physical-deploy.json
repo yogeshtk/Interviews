@@ -1,0 +1,52 @@
+{
+  "title": "Customer portal — physical deployment (AWS eu-west-2)",
+  "type": "physical",
+  "layout": {"direction": "LR"},
+  "groups": [
+    {"id": "region", "label": "AWS region eu-west-2", "color": "#ed6c02"},
+    {"id": "vpc", "label": "VPC 10.20.0.0/16", "parent": "region", "color": "#1976d2"},
+    {"id": "app", "label": "EKS cluster · app namespace", "parent": "vpc", "color": "#0288d1", "style": "solid"},
+    {"id": "data", "label": "Private data subnets", "parent": "vpc", "color": "#2e7d32"}
+  ],
+  "nodes": [
+    {"id": "user", "kind": "device", "label": "Customer browser", "description": "Any modern browser on the public internet."},
+    {"id": "cdn", "kind": "cloud", "label": "CloudFront CDN", "tech": "Edge cache", "group": "region", "description": "Serves static assets and forwards API calls."},
+    {"id": "alb", "kind": "gateway", "label": "Application Load Balancer", "tech": "Public subnets, 2 AZs", "group": "vpc", "description": "Terminates TLS and spreads traffic across API pods."},
+    {"id": "api1", "kind": "container", "label": "portal-api pod A", "tech": "AZ a · 2 vCPU", "group": "app", "description": "Stateless Java API replica in availability zone a."},
+    {"id": "api2", "kind": "container", "label": "portal-api pod B", "tech": "AZ b · 2 vCPU", "group": "app", "description": "Stateless Java API replica in availability zone b."},
+    {"id": "redis", "kind": "cache", "label": "ElastiCache Redis cluster for sessions and rate limiting", "group": "data", "description": "Session store and rate limiter; 1 primary and 1 replica."},
+    {"id": "rds", "kind": "database", "label": "RDS PostgreSQL primary", "tech": "db.r6g.xlarge", "group": "data", "fill": 0.35, "description": "Multi-AZ primary. Synchronous standby in the second AZ."},
+    {"id": "sqs", "kind": "queue", "label": "email-outbox queue", "tech": "SQS", "group": "vpc", "description": "Buffers notification emails for the worker."},
+    {"id": "worker", "kind": "server", "label": "Notification worker (EC2 auto-scaling group)", "tech": "t3.medium", "group": "vpc", "description": "Reads the queue and sends email through SES."},
+    {"id": "ses", "kind": "external", "label": "Amazon SES", "group": "region", "description": "Outbound email service."}
+  ],
+  "edges": [
+    {"id": "p1", "from": "user", "to": "cdn", "label": "HTTPS 443", "protocol": "TLS 1.3"},
+    {"id": "p2", "from": "cdn", "to": "alb", "label": "HTTPS 443", "protocol": "TLS 1.2+"},
+    {"id": "p3", "from": "alb", "to": "api1", "label": "HTTP 8080"},
+    {"id": "p4", "from": "alb", "to": "api2", "label": "HTTP 8080"},
+    {"id": "p5", "from": "api1", "to": "rds", "label": "JDBC 5432"},
+    {"id": "p6", "from": "api2", "to": "rds", "label": "JDBC 5432"},
+    {"id": "p7", "from": "api1", "to": "redis", "label": "Redis 6379"},
+    {"id": "p8", "from": "api2", "to": "sqs", "label": "Send message over HTTPS using the AWS SDK with a VPC endpoint", "kind": "async"},
+    {"id": "p9", "from": "sqs", "to": "worker", "label": "Long poll", "kind": "async"},
+    {"id": "p10", "from": "worker", "to": "ses", "label": "SMTP/API", "kind": "async"}
+  ],
+  "scenes": [
+    {"title": "Request reaches the cluster", "steps": [
+      {"edge": "p1", "payload": "GET /account", "caption": "The browser connects to the nearest CloudFront edge over HTTPS."},
+      {"edge": "p2", "payload": "GET /account", "caption": "CloudFront forwards the dynamic request to the load balancer."},
+      {"edge": "p3", "payload": "GET /account", "caption": "The load balancer picks pod A. Pod B takes the next request."}
+    ]},
+    {"title": "API reads and writes data", "steps": [
+      {"edge": "p7", "payload": "session", "caption": "Pod A checks the session in Redis."},
+      {"edge": "p5", "payload": "SELECT", "fillBy": 0.05, "caption": "Pod A queries the primary database. Writes grow the database over time."}
+    ]},
+    {"title": "Email notification", "steps": [
+      {"edge": "p8", "msg": "m1", "payload": "welcome email", "caption": "Pod B drops a notification on the queue and returns to the customer immediately."},
+      {"edge": "p8", "msg": "m2", "payload": "receipt email", "caption": "A second notification joins the queue."},
+      {"edge": "p9", "payload": "welcome email", "caption": "The worker long-polls the queue and takes the oldest message."},
+      {"edge": "p10", "payload": "welcome email", "caption": "The worker hands the message to SES for delivery."}
+    ]}
+  ]
+}
